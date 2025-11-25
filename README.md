@@ -1,0 +1,1 @@
+Backend service for the Lifarando food delivery ecosystem. Built with FastAPI, PostgreSQL, Alembic, Docker, and JWT authentication. Includes modules for user accounts, restaurants, menu items, orders, drivers, shifts, payments, and geo-based delivery logic.
