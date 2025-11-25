@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+build/
+dist/
+
+# Editor
+.vscode/
+.idea/
+
+# Pyproject/lock files
+poetry.lock
+pip-wheel-metadata/
+
+# Alembic cache
+app/db/migrations/*.pyc
+
+# Media/uploads
+media/
+
+# macOS / misc
+.DS_Store
