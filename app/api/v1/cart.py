@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_session, get_current_user
+from app.models import MenuItem
 from app.services.suggestion_service import suggest_items
 from app.services.pricing_service import Quote
 
