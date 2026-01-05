@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_session
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.core.security import decode_token
 
 AuthBearer = HTTPBearer(auto_error=False)
@@ -30,3 +30,53 @@ async def get_current_user(
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
     return user
+
+
+# Role-based dependencies for app-specific access control
+async def get_current_customer(
+    user: Annotated[User, Depends(get_current_user)]
+) -> User:
+    """Ensure the current user is a customer"""
+    if user.role != UserRole.customer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Customer access required"
+        )
+    return user
+
+
+async def get_current_driver(
+    user: Annotated[User, Depends(get_current_user)]
+) -> User:
+    """Ensure the current user is a driver/rider"""
+    if user.role != UserRole.driver:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Driver access required"
+        )
+    return user
+
+
+async def get_current_restaurant_owner(
+    user: Annotated[User, Depends(get_current_user)]
+) -> User:
+    """Ensure the current user is a restaurant owner"""
+    if user.role != UserRole.restaurant_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Restaurant owner access required"
+        )
+    return user
+
+
+async def get_current_admin(
+    user: Annotated[User, Depends(get_current_user)]
+) -> User:
+    """Ensure the current user is an admin"""
+    if user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return user
+

@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 import os
 from dotenv import load_dotenv
 
@@ -13,6 +13,10 @@ class Settings(BaseSettings):
 
     # --- database ---
     DATABASE_URL: str
+
+    # --- auth/security ---
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # --- uploads/static ---
     MEDIA_DIR: str = "app/media"

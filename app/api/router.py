@@ -1,24 +1,48 @@
+"""
+Main API router that organizes endpoints by app (customer, rider, restaurant)
+Each app has its own router with role-based access control
+"""
 from fastapi import APIRouter
 
-from app.api.v1 import auth
+# Import app-specific routers
+from app.api.apps.customer import router as customer_router
+from app.api.apps.rider import router as rider_router
+from app.api.apps.restaurant import router as restaurant_router
 
 api_router = APIRouter()
-# api_routeruter.include_router(auth.router, prefix="/auth", tags=["auth"])
 
+# === APP-SPECIFIC ROUTERS ===
+# Each app has its own dedicated prefix and endpoints
 
-# v1 routers will be added here as modules are created:
-from .v1 import auth, users, restaurants, menu, cart, orders, drivers, payments, webhooks
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-# api_router.include_router(users.router, prefix="/users", tags=["users"])
-# api_router.include_router(restaurants.router, prefix="/restaurants", tags=["restaurants"])
-# api_router.include_router(menu.router, prefix="/menu", tags=["menu"])
-api_router.include_router(cart.router, prefix="/cart", tags=["cart"])
-api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
-# api_router.include_router(drivers.router, prefix="/drivers", tags=["drivers"])
+# Customer App - for end users placing orders
+api_router.include_router(
+    customer_router,
+    prefix="/customer",
+    tags=["Customer App"]
+)
+
+# Rider App - for delivery drivers/riders
+api_router.include_router(
+    rider_router,
+    prefix="/rider",
+    tags=["Rider App"]
+)
+
+# Restaurant App - for restaurant owners/managers
+api_router.include_router(
+    restaurant_router,
+    prefix="/restaurant",
+    tags=["Restaurant App"]
+)
+
+# === SHARED/ADMIN ENDPOINTS ===
+# Legacy v1 endpoints (if needed for backwards compatibility)
+# from .v1 import payments, webhooks
 # api_router.include_router(payments.router, prefix="/payments", tags=["payments"])
 # api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 
-# Temporary health endpoint so you can hit something immediately
-@api_router.get("/health", tags=["_internal"])
+# Health check endpoint
+@api_router.get("/health", tags=["System"])
 async def health():
-    return {"status": "ok"}
+    """System health check"""
+    return {"status": "ok", "apps": ["customer", "rider", "restaurant"]}
