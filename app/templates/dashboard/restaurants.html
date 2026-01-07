@@ -1,0 +1,172 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Restaurants - Admin Panel{% endblock %}
+{% block page_title %}Restaurant Management{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1>Restaurant Management</h1>
+        <p>Approve and manage restaurants on the platform</p>
+    </div>
+    <div>
+        <a href="?pending_only=true" class="btn btn-warning">
+            <i class="bi bi-hourglass-split"></i> Pending Approvals ({{ stats.pending_approvals if stats else 0 }})
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <select name="city_id" class="form-select">
+                    <option value="">All Cities</option>
+                    {% for city in cities %}
+                    <option value="{{ city.id }}">{{ city.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>City</th>
+                        <th>Cuisine</th>
+                        <th>Status</th>
+                        <th>Approval</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if restaurants %}
+                        {% for restaurant in restaurants %}
+                        <tr>
+                            <td><strong>#{{ restaurant.id }}</strong></td>
+                            <td>
+                                <strong>{{ restaurant.name }}</strong><br>
+                                <small class="text-muted">{{ restaurant.address }}</small>
+                            </td>
+                            <td>City #{{ restaurant.city_id }}</td>
+                            <td>{{ restaurant.cuisine_type or 'N/A' }}</td>
+                            <td>
+                                {% if restaurant.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if restaurant.is_approved %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Approved
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-clock"></i> Pending
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not restaurant.is_approved %}
+                                <button class="btn btn-sm btn-success" onclick="approveRestaurant({{ restaurant.id }}, true)">
+                                    <i class="bi bi-check-circle"></i> Approve
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="approveRestaurant({{ restaurant.id }}, false)">
+                                    <i class="bi bi-x-circle"></i> Reject
+                                </button>
+                                {% else %}
+                                <button class="btn btn-sm btn-secondary" onclick="toggleActive({{ restaurant.id }}, {{ 'false' if restaurant.is_active else 'true' }})">
+                                    {% if restaurant.is_active %}
+                                        <i class="bi bi-pause-circle"></i> Deactivate
+                                    {% else %}
+                                        <i class="bi bi-play-circle"></i> Activate
+                                    {% endif %}
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <br>No restaurants found
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function approveRestaurant(restaurantId, approve) {
+    const action = approve ? 'approve' : 'reject';
+    if (!confirm(`Are you sure you want to ${action} this restaurant?`)) return;
+
+    try {
+        const response = await fetch(`/api/v1/restaurants-rbac/${restaurantId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ approve: approve })
+        });
+
+        if (response.ok) {
+            alert(`Restaurant ${approve ? 'approved' : 'rejected'} successfully!`);
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function toggleActive(restaurantId, isActive) {
+    const action = isActive ? 'activate' : 'deactivate';
+    if (!confirm(`Are you sure you want to ${action} this restaurant?`)) return;
+
+    try {
+        const response = await fetch(`/api/v1/restaurants-rbac/${restaurantId}/toggle-active?is_active=${isActive}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
+        });
+
+        if (response.ok) {
+            alert(`Restaurant ${action}d successfully!`);
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+</script>
+{% endblock %}
+

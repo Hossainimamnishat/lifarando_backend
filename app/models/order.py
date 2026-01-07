@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, Numeric, Enum, DateTime, ForeignKey, text as sa_text
+from sqlalchemy import String, Integer, Numeric, Enum, DateTime, ForeignKey, text as sa_text, Index
 from app.db.base import Base
 import enum
 
@@ -27,8 +27,10 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    city_id: Mapped[int] = mapped_column(ForeignKey("cities.id"), nullable=False, index=True)
     customer_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     restaurant_id: Mapped[int] = mapped_column(ForeignKey("restaurants.id"), index=True)
+    rider_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
 
     order_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.created)
@@ -53,8 +55,20 @@ class Order(Base):
         server_default=sa_text("CURRENT_TIMESTAMP")
     )
 
+    # Relationships
+    city: Mapped["City"] = relationship("City", foreign_keys=[city_id])
+    customer: Mapped["User"] = relationship("User", foreign_keys=[customer_id])
+    restaurant: Mapped["Restaurant"] = relationship("Restaurant", foreign_keys=[restaurant_id])
+    rider: Mapped["User | None"] = relationship("User", foreign_keys=[rider_id])
     items: Mapped[list["OrderItem"]] = relationship(
         back_populates="order", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index('idx_orders_city_status', 'city_id', 'status'),
+        Index('idx_orders_restaurant_status', 'restaurant_id', 'status'),
+        Index('idx_orders_rider_status', 'rider_id', 'status'),
+        Index('idx_orders_customer', 'customer_id', 'created_at'),
     )
 
 

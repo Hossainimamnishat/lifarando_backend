@@ -1,0 +1,189 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}User Roles - Admin Panel{% endblock %}
+
+{% block page_title %}User Roles Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>User Roles Management</h1>
+    <p>Assign and manage user roles with scope-based access control</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Assign New Role</h5>
+    </div>
+    <div class="card-body">
+        <form id="assignRoleForm">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">User</label>
+                    <select class="form-select" name="user_id" required>
+                        <option value="">Select User...</option>
+                        {% for u in all_users %}
+                        <option value="{{ u.id }}">{{ u.first_name }} {{ u.last_name }} ({{ u.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" name="role_code" required>
+                        <option value="">Select Role...</option>
+                        {% for role in all_roles %}
+                        <option value="{{ role.code }}">{{ role.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">City (if applicable)</label>
+                    <select class="form-select" name="city_id">
+                        <option value="">None</option>
+                        {% for city in all_cities %}
+                        <option value="{{ city.id }}">{{ city.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Notes (optional)</label>
+                    <input type="text" class="form-control" name="notes" placeholder="Assignment reason...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Assign Role
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Active Role Assignments</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Scope</th>
+                        <th>Assigned By</th>
+                        <th>Assigned At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if user_roles %}
+                        {% for ur, role, u in user_roles %}
+                        <tr>
+                            <td><strong>{{ u.first_name }} {{ u.last_name }}</strong></td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ role.name }}</span>
+                            </td>
+                            <td>
+                                {% if ur.city_id %}
+                                    <span class="scope-badge city">City #{{ ur.city_id }}</span>
+                                {% elif ur.restaurant_id %}
+                                    <span class="scope-badge restaurant">Restaurant #{{ ur.restaurant_id }}</span>
+                                {% elif role.scope_type.value == 'global' %}
+                                    <span class="scope-badge global">GLOBAL</span>
+                                {% else %}
+                                    <span class="scope-badge self">SELF</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ur.assigned_by %}
+                                    User #{{ ur.assigned_by }}
+                                {% else %}
+                                    System
+                                {% endif %}
+                            </td>
+                            <td>{{ ur.assigned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="revokeRole({{ ur.id }})">
+                                    <i class="bi bi-x-circle"></i> Revoke
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <br>No role assignments found
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('assignRoleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+        user_id: parseInt(formData.get('user_id')),
+        role_code: formData.get('role_code'),
+        city_id: formData.get('city_id') ? parseInt(formData.get('city_id')) : null,
+        notes: formData.get('notes') || null
+    };
+
+    try {
+        const response = await fetch('/api/v1/rbac/user-roles', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Role assigned successfully!');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+async function revokeRole(userRoleId) {
+    if (!confirm('Are you sure you want to revoke this role?')) return;
+
+    try {
+        const response = await fetch(`/api/v1/rbac/user-roles/${userRoleId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
+        });
+
+        if (response.ok) {
+            alert('Role revoked successfully!');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+</script>
+{% endblock %}
+

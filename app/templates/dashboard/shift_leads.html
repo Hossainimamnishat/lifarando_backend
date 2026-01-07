@@ -1,0 +1,73 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Shift Leads{% endblock %}
+{% block page_title %}Shift Lead Management{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h1>Shift Lead Management</h1><p>Manage driver work hour constraints per city</p></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addShiftLeadModal">
+        <i class="bi bi-plus-circle"></i> Add Shift Lead
+    </button>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>User</th><th>City</th><th>Hours/Shift</th><th>Hours/Week</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    {% if shift_leads %}
+                        {% for sl in shift_leads %}
+                        <tr>
+                            <td><strong>User #{{ sl.user_id }}</strong></td>
+                            <td>City #{{ sl.city_id }}</td>
+                            <td><span class="badge bg-info">{{ sl.min_hours_per_shift }}-{{ sl.max_hours_per_shift }} hrs</span></td>
+                            <td><span class="badge bg-success">{{ sl.min_hours_per_week }}-{{ sl.max_hours_per_week }} hrs</span></td>
+                            <td>{% if sl.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="5" class="text-center py-4 text-muted">No shift leads found</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="addShiftLeadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Add Shift Lead</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="addShiftLeadForm">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">User</label><select class="form-select" name="user_id" required><option value="">Select User...</option>{% for u in users %}<option value="{{ u.id }}">{{ u.first_name }} {{ u.last_name }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label class="form-label">City</label><select class="form-select" name="city_id" required><option value="">Select City...</option>{% for c in cities %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+                    <div class="row">
+                        <div class="col-6 mb-3"><label class="form-label">Min Hours/Shift</label><input type="number" class="form-control" name="min_hours_per_shift" value="4" required></div>
+                        <div class="col-6 mb-3"><label class="form-label">Max Hours/Shift</label><input type="number" class="form-control" name="max_hours_per_shift" value="12" required></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3"><label class="form-label">Min Hours/Week</label><input type="number" class="form-control" name="min_hours_per_week" value="20" required></div>
+                        <div class="col-6 mb-3"><label class="form-label">Max Hours/Week</label><input type="number" class="form-control" name="max_hours_per_week" value="60" required></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Add Shift Lead</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.getElementById('addShiftLeadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {user_id: parseInt(formData.get('user_id')), city_id: parseInt(formData.get('city_id')), min_hours_per_shift: parseInt(formData.get('min_hours_per_shift')), max_hours_per_shift: parseInt(formData.get('max_hours_per_shift')), min_hours_per_week: parseInt(formData.get('min_hours_per_week')), max_hours_per_week: parseInt(formData.get('max_hours_per_week'))};
+    try {
+        const response = await fetch('/api/v1/rbac/shift-leads', {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token')}, body: JSON.stringify(data)});
+        if (response.ok) { alert('Shift lead added!'); location.reload(); } else { const error = await response.json(); alert('Error: ' + error.detail); }
+    } catch (err) { alert('Error: ' + err.message); }
+});
+</script>
+{% endblock %}
+

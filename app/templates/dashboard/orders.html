@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Orders{% endblock %}
+{% block page_title %}Orders Management{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Orders Management</h1></div>
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <select name="city_id" class="form-select">
+                    <option value="">All Cities</option>
+                    {% for city in cities %}<option value="{{ city.id }}">{{ city.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    {% for s in order_statuses %}<option value="{{ s }}">{{ s|title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>ID</th><th>Customer</th><th>Restaurant</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
+                <tbody>
+                    {% if orders %}
+                        {% for order in orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>Restaurant #{{ order.restaurant_id }}</td>
+                            <td><span class="badge bg-info">{{ order.status.value }}</span></td>
+                            <td><strong>${{ "%.2f"|format(order.total) }}</strong></td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No orders found</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

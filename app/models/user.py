@@ -1,12 +1,13 @@
 from __future__ import annotations
 from datetime import date
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Enum, Date, Boolean
 from app.db.base import Base
 import enum
 
 
 class UserRole(str, enum.Enum):
+    """Legacy user role enum - kept for backward compatibility"""
     customer = "customer"
     restaurant_owner = "restaurant_owner"
     driver = "driver"
@@ -25,3 +26,9 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.customer)
     hashed_password: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Relationships for RBAC
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        "UserRole", foreign_keys="UserRole.user_id", back_populates="user"
+    )
+
